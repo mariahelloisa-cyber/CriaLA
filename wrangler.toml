@@ -1,3 +1,21 @@
 name = "soucriala"
 compatibility_date = "2026-08-13"
 pages_build_output_dir = "dist"
+
+# [assets]/not_found_handling é exclusivo de Workers — a configuração de
+# Pages (este projeto) rejeita essa seção com erro fatal ("Configuration
+# file for Pages projects does not support 'assets'"). O fallback de SPA
+# para Pages continua sendo public/_redirects (`/* /index.html 200`) — o
+# aviso de "infinite loop" que o Cloudflare mostra para essa regra é só um
+# aviso (a build não falha por causa dele).
+
+# Presença de wrangler.toml faz o Cloudflare ler a configuração de build
+# daqui em vez de só do painel — por isso as mesmas variáveis do painel
+# (Settings > Build > Variables and secrets) precisam existir aqui também,
+# senão o build roda com elas ausentes (visto no log: "Build environment
+# variables: (none found)"). A anon key do Supabase é segura para expor
+# publicamente por design (fica visível no bundle JS de qualquer forma) —
+# a proteção real é a RLS do banco, não o sigilo desta chave.
+[vars]
+VITE_SUPABASE_URL = "https://mppxkcbhbhjdoctggkhk.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wcHhrY2JoYmhqZG9jdGdna2hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0NzYwNzYsImV4cCI6MjEwMjA1MjA3Nn0.ATrXDNqOa68DJ5UFaYr04TDoQNyZzTydPk1eCGdSA6M"
