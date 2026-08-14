@@ -45,12 +45,23 @@ export interface MyRankSummary {
   realizedStudents: number
 }
 
-/** Um ponto da "evolução": total realizado (financeiro/alunos) de um mês. */
+/**
+ * Um ponto da "evolução": total realizado (financeiro/alunos) de um mês,
+ * mais a meta do mesmo mês (Fase 23) — soma de `goals.financial_target`/
+ * `student_target` de todos os vendedores do escopo (ou de um único
+ * vendedor, quando filtrado). `goalAmount/goalStudentCount: null` = nenhuma
+ * meta cadastrada para nenhum vendedor do escopo naquele mês (mesma
+ * distinção de `SellerGoalSummary.goal`: null ≠ meta zero).
+ */
 export interface MonthlyRealized {
   month: number
   year: number
   realizedAmount: number
   realizedStudents: number
+  goalAmount: number | null
+  goalStudentCount: number | null
+  /** 0–100+, mesma fórmula de summarizeSellers (target>0 ? realizado/target*100 : 0). 0 quando goalAmount é null ou 0. */
+  financialPercent: number
 }
 
 export interface UpsertGoalInput {

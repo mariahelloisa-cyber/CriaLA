@@ -1,4 +1,4 @@
-import { Eye, MoreHorizontal, Pencil, Power, PowerOff, Target, TrendingUp } from 'lucide-react'
+import { Eye, KeyRound, MoreHorizontal, Pencil, Power, PowerOff, Target, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
@@ -18,12 +18,13 @@ import type { SellerListItem } from '@/types/sellers'
 interface SellersCardsProps {
   items: SellerListItem[]
   onEdit: (seller: SellerListItem) => void
+  onResetPassword: (seller: SellerListItem) => void
   onToggleStatus: (seller: SellerListItem) => void
   className?: string
 }
 
 /** Fallback mobile (<lg) da SellersTable — mesmo padrão de CoursesCards/StudentsCards. */
-export function SellersCards({ items, onEdit, onToggleStatus, className }: SellersCardsProps) {
+export function SellersCards({ items, onEdit, onResetPassword, onToggleStatus, className }: SellersCardsProps) {
   return (
     <div className={className}>
       <ul className="flex flex-col gap-3">
@@ -54,6 +55,10 @@ export function SellersCards({ items, onEdit, onToggleStatus, className }: Selle
                     <DropdownMenuItem onSelect={() => onEdit(seller)}>
                       <Pencil className="size-4" aria-hidden="true" />
                       Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onResetPassword(seller)}>
+                      <KeyRound className="size-4" aria-hidden="true" />
+                      Alterar senha
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => onToggleStatus(seller)}>
                       {seller.is_active ? (

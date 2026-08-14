@@ -38,3 +38,16 @@ export interface CreateSellerInput {
   email: string
   password: string
 }
+
+/** Fase 23 — payload enviado para a Edge Function update-seller. */
+export interface UpdateSellerInput {
+  id: string
+  full_name: string
+  email: string
+}
+
+/** Fase 23 — payload enviado para a Edge Function reset-seller-password. */
+export interface ResetSellerPasswordInput {
+  id: string
+  password: string
+}

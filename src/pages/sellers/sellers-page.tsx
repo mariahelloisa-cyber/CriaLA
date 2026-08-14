@@ -12,10 +12,11 @@ import { TableSkeleton } from '@/components/ui/skeleton'
 import { ROUTES } from '@/constants/routes'
 import { toast } from '@/hooks/use-toast'
 import { useShellUser } from '@/hooks/useShellUser'
-import { createSeller, updateSellerName, updateSellerStatus } from '@/services/sellers.service'
+import { createSeller, resetSellerPassword, updateSeller, updateSellerStatus } from '@/services/sellers.service'
 import type { CreateSellerInput, SellerListItem } from '@/types/sellers'
 import { NewSellerDialog } from './components/new-seller-dialog'
 import { SellerEditDialog } from './components/seller-edit-dialog'
+import { SellerPasswordDialog } from './components/seller-password-dialog'
 import { SellerStatusDialog } from './components/seller-status-dialog'
 import { SellersCards } from './components/sellers-cards'
 import { SellersFilters } from './components/sellers-filters'
@@ -31,6 +32,8 @@ export function SellersPage() {
   const [creatingSeller, setCreatingSeller] = useState(false)
   const [editingSeller, setEditingSeller] = useState<SellerListItem | null>(null)
   const [savingEdit, setSavingEdit] = useState(false)
+  const [passwordSeller, setPasswordSeller] = useState<SellerListItem | null>(null)
+  const [savingPassword, setSavingPassword] = useState(false)
   const [statusSeller, setStatusSeller] = useState<SellerListItem | null>(null)
   const [savingStatus, setSavingStatus] = useState(false)
 
@@ -52,11 +55,11 @@ export function SellersPage() {
     }
   }
 
-  async function handleSaveName(fullName: string) {
+  async function handleSaveEdit(values: { full_name: string; email: string }) {
     if (!editingSeller) return
     setSavingEdit(true)
     try {
-      await updateSellerName(editingSeller.id, fullName)
+      await updateSeller({ id: editingSeller.id, ...values })
       toast({ title: 'Vendedor atualizado com sucesso.', variant: 'success' })
       setEditingSeller(null)
       retry()
@@ -68,6 +71,24 @@ export function SellersPage() {
       })
     } finally {
       setSavingEdit(false)
+    }
+  }
+
+  async function handleResetPassword(password: string) {
+    if (!passwordSeller) return
+    setSavingPassword(true)
+    try {
+      await resetSellerPassword({ id: passwordSeller.id, password })
+      toast({ title: 'Senha alterada com sucesso.', variant: 'success' })
+      setPasswordSeller(null)
+    } catch (err) {
+      toast({
+        title: 'Não foi possível alterar a senha.',
+        description: err instanceof Error ? err.message : undefined,
+        variant: 'error',
+      })
+    } finally {
+      setSavingPassword(false)
     }
   }
 
@@ -185,12 +206,14 @@ export function SellersPage() {
                 <SellersTable
                   items={sellers}
                   onEdit={setEditingSeller}
+                  onResetPassword={setPasswordSeller}
                   onToggleStatus={setStatusSeller}
                   className="hidden lg:block"
                 />
                 <SellersCards
                   items={sellers}
                   onEdit={setEditingSeller}
+                  onResetPassword={setPasswordSeller}
                   onToggleStatus={setStatusSeller}
                   className="lg:hidden"
                 />
@@ -212,7 +235,14 @@ export function SellersPage() {
         onOpenChange={(open) => !open && setEditingSeller(null)}
         seller={editingSeller}
         submitting={savingEdit}
-        onSubmit={handleSaveName}
+        onSubmit={handleSaveEdit}
+      />
+
+      <SellerPasswordDialog
+        seller={passwordSeller}
+        onOpenChange={(open) => !open && setPasswordSeller(null)}
+        submitting={savingPassword}
+        onSubmit={handleResetPassword}
       />
 
       <SellerStatusDialog

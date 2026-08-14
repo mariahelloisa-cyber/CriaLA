@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { listSellerGoalSummariesForRange, rankSellersByValue } from '@/services/goals.service'
 import type { SellerOption } from '@/types/goals'
-import type { CreateSellerInput, SellerListItem } from '@/types/sellers'
+import type { CreateSellerInput, ResetSellerPasswordInput, SellerListItem, UpdateSellerInput } from '@/types/sellers'
 
 interface PostgrestLikeError {
   message: string
@@ -113,17 +113,29 @@ export async function updateSellerStatus(id: string, isActive: boolean): Promise
 }
 
 /**
- * Único campo de edição seguro nesta fase: full_name. E-mail/senha exigem
- * Supabase Auth Admin API (service_role/Edge Function) — infraestrutura que
- * não existe neste projeto (ver relatório final da Fase 21, seção P/Q) — a
- * UI não oferece editá-los.
+ * Chamada padrão para as Edge Functions de administração de vendedor
+ * (create-seller/update-seller/reset-seller-password) — todas seguem o
+ * mesmo contrato de erro (`{ error: string }` no corpo de uma
+ * FunctionsHttpError), então a extração de mensagem amigável fica num só
+ * lugar em vez de repetida em cada função exportada.
  */
-export async function updateSellerName(id: string, fullName: string): Promise<void> {
-  const { error } = await supabase.from('profiles').update({ full_name: fullName }).eq('id', id)
+async function invokeSellerFunction<T>(name: string, body: object, fallback: string): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body: body as Record<string, unknown> })
 
   if (error) {
-    throw mapError(error, 'Não foi possível atualizar o vendedor.')
+    let message = fallback
+    if (error instanceof FunctionsHttpError) {
+      try {
+        const errorBody = await error.context.json()
+        if (typeof errorBody?.error === 'string') message = errorBody.error
+      } catch {
+        // Mantém a mensagem genérica se o corpo do erro não vier como JSON.
+      }
+    }
+    throw new Error(message)
   }
+
+  return data as T
 }
 
 /**
@@ -135,24 +147,30 @@ export async function updateSellerName(id: string, fullName: string): Promise<vo
  * reflete o que a function autorizou.
  */
 export async function createSeller(input: CreateSellerInput): Promise<{ id: string }> {
-  const { data, error } = await supabase.functions.invoke('create-seller', {
-    body: input,
-  })
+  return invokeSellerFunction('create-seller', input, 'Não foi possível criar o vendedor. Tente novamente.')
+}
 
-  if (error) {
-    let message = 'Não foi possível criar o vendedor. Tente novamente.'
-    if (error instanceof FunctionsHttpError) {
-      try {
-        const body = await error.context.json()
-        if (typeof body?.error === 'string') message = body.error
-      } catch {
-        // Mantém a mensagem genérica se o corpo do erro não vier como JSON.
-      }
-    }
-    throw new Error(message)
-  }
+/**
+ * Fase 23 — edita nome e e-mail de um vendedor via Edge Function
+ * `update-seller`. E-mail é campo de auth.users (Supabase Auth), não de
+ * profiles — só pode ser alterado com segurança pela Admin API no servidor
+ * (mesmo motivo/mesma restrição de service_role de createSeller). A function
+ * também atualiza profiles.full_name/email para manter os dois em
+ * sincronia. Desde a Fase 23, nome e e-mail são salvos juntos numa única
+ * chamada pelo diálogo "Editar vendedor" — não existe mais um update direto
+ * de full_name isolado no client.
+ */
+export async function updateSeller(input: UpdateSellerInput): Promise<void> {
+  await invokeSellerFunction('update-seller', input, 'Não foi possível atualizar o vendedor. Tente novamente.')
+}
 
-  return data as { id: string }
+/**
+ * Fase 23 — define uma nova senha para um vendedor via Edge Function
+ * `reset-seller-password`. Senha nunca é lida/gravada por este client — só
+ * repassada para a function, que chama a Admin API do Supabase Auth.
+ */
+export async function resetSellerPassword(input: ResetSellerPasswordInput): Promise<void> {
+  await invokeSellerFunction('reset-seller-password', input, 'Não foi possível alterar a senha. Tente novamente.')
 }
 
 export async function getSeller(id: string): Promise<SellerOption & { email: string | null; is_active: boolean } | null> {

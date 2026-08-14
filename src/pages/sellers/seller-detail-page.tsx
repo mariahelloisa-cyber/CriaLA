@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Pencil, Power, PowerOff, Target, TrendingUp } from 'lucide-react'
+import { ArrowLeft, KeyRound, Pencil, Power, PowerOff, Target, TrendingUp } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AuthLoading } from '@/components/auth/auth-loading'
 import { AppShell } from '@/components/layout/app-shell'
@@ -13,11 +13,12 @@ import { ActiveStatusBadge } from '@/components/shared/active-status-badge'
 import { ROUTES } from '@/constants/routes'
 import { toast } from '@/hooks/use-toast'
 import { useShellUser } from '@/hooks/useShellUser'
-import { listSellersOverview, updateSellerName, updateSellerStatus } from '@/services/sellers.service'
+import { listSellersOverview, resetSellerPassword, updateSeller, updateSellerStatus } from '@/services/sellers.service'
 import { currentPeriod, firstDayOfPeriodIso, lastDayOfPeriodIso } from '@/utils/period'
 import { formatCentsToBRL } from '@/utils/currency'
 import type { SellerListItem } from '@/types/sellers'
 import { SellerEditDialog } from './components/seller-edit-dialog'
+import { SellerPasswordDialog } from './components/seller-password-dialog'
 import { SellerStatusDialog } from './components/seller-status-dialog'
 
 function InfoField({ label, value }: { label: string; value: string }) {
@@ -44,6 +45,8 @@ export function SellerDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [savingPassword, setSavingPassword] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
   const [savingStatus, setSavingStatus] = useState(false)
 
@@ -65,11 +68,11 @@ export function SellerDetailPage() {
     void load()
   }, [load])
 
-  async function handleSaveName(fullName: string) {
+  async function handleSaveEdit(values: { full_name: string; email: string }) {
     if (!seller) return
     setSavingEdit(true)
     try {
-      await updateSellerName(seller.id, fullName)
+      await updateSeller({ id: seller.id, ...values })
       toast({ title: 'Vendedor atualizado com sucesso.', variant: 'success' })
       setEditOpen(false)
       void load()
@@ -81,6 +84,24 @@ export function SellerDetailPage() {
       })
     } finally {
       setSavingEdit(false)
+    }
+  }
+
+  async function handleResetPassword(password: string) {
+    if (!seller) return
+    setSavingPassword(true)
+    try {
+      await resetSellerPassword({ id: seller.id, password })
+      toast({ title: 'Senha alterada com sucesso.', variant: 'success' })
+      setPasswordOpen(false)
+    } catch (err) {
+      toast({
+        title: 'Não foi possível alterar a senha.',
+        description: err instanceof Error ? err.message : undefined,
+        variant: 'error',
+      })
+    } finally {
+      setSavingPassword(false)
     }
   }
 
@@ -152,6 +173,10 @@ export function SellerDetailPage() {
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil className="size-4" aria-hidden="true" />
               Editar
+            </Button>
+            <Button variant="outline" onClick={() => setPasswordOpen(true)}>
+              <KeyRound className="size-4" aria-hidden="true" />
+              Alterar senha
             </Button>
             <Button variant={seller.is_active ? 'destructive' : 'primary'} onClick={() => setStatusOpen(true)}>
               {seller.is_active ? (
@@ -236,7 +261,14 @@ export function SellerDetailPage() {
         </div>
       </div>
 
-      <SellerEditDialog open={editOpen} onOpenChange={setEditOpen} seller={seller} submitting={savingEdit} onSubmit={handleSaveName} />
+      <SellerEditDialog open={editOpen} onOpenChange={setEditOpen} seller={seller} submitting={savingEdit} onSubmit={handleSaveEdit} />
+
+      <SellerPasswordDialog
+        seller={passwordOpen ? seller : null}
+        onOpenChange={setPasswordOpen}
+        submitting={savingPassword}
+        onSubmit={handleResetPassword}
+      />
 
       <SellerStatusDialog
         seller={statusOpen ? seller : null}

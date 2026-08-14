@@ -1,42 +1,63 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 import { formatCentsToBRL } from '@/utils/currency'
 import { monthLabel } from '@/utils/period'
 import type { MonthlyRealized } from '@/types/goals'
 
 /**
- * "Evolução" simples e legível (seção 16 do prompt): barras horizontais com
- * o valor realizado de cada um dos últimos 6 meses, escaladas pelo maior
- * valor do conjunto. Não é um gráfico de biblioteca externa — o projeto não
- * tem nenhuma dependência de charting, e um gráfico completo seria
- * desproporcional ao pedido ("evolução... de maneira simples"). A janela de
- * 6 meses é uma escolha de implementação (o PDF não define uma janela) —
- * documentada no relatório final.
+ * "Evolução das Metas" (Fase 23, evoluindo a versão simples da Fase 12):
+ * meta x realizado por mês, com percentual quando há meta cadastrada. Reusa
+ * o `Progress` do design system para a barra — mesmo componente já usado em
+ * GoalSummaryCards/GoalTeamSummary para "meta x realizado" de um período
+ * único, então o visual fica consistente com o resto da página em vez de um
+ * gráfico novo e isolado. `Progress` já clampa a barra em 100% visualmente
+ * mas não o número (mesmo comportamento documentado desde a Fase 12: meta
+ * superada mostra >100%, não é bug).
+ *
+ * Quando não há meta cadastrada para o mês (`goalAmount === null` — todos os
+ * vendedores do escopo sem meta naquele período, distinto de meta = 0), a
+ * barra de progresso não é exibida (não há contra o que comparar) — só o
+ * valor realizado, com uma nota explícita em vez de fingir 0%.
  */
 export function GoalEvolution({ months }: { months: MonthlyRealized[] }) {
-  const maxAmount = Math.max(1, ...months.map((m) => m.realizedAmount))
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Evolução (últimos {months.length} meses)</CardTitle>
+        <CardTitle>Evolução das metas (últimos {months.length} meses)</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex flex-col gap-5">
         {months.map((month) => {
-          const widthPercent = Math.max(2, (month.realizedAmount / maxAmount) * 100)
+          const key = `${month.year}-${month.month}`
+          const label = `${monthLabel(month.month)}/${month.year}`
+          const hasGoal = month.goalAmount !== null
+
           return (
-            <div key={`${month.year}-${month.month}`} className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-caption text-muted-foreground">
-                {monthLabel(month.month).slice(0, 3)}/{String(month.year).slice(2)}
-              </span>
-              <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-300"
-                  style={{ width: `${widthPercent}%` }}
-                />
+            <div key={key} className="flex flex-col gap-1.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <span className="text-body-sm font-medium text-foreground">{label}</span>
+                <span
+                  className="text-caption text-muted-foreground"
+                  title={
+                    hasGoal
+                      ? `Realizado ${formatCentsToBRL(Math.round(month.realizedAmount * 100))} de meta ${formatCentsToBRL(Math.round((month.goalAmount ?? 0) * 100))}`
+                      : undefined
+                  }
+                >
+                  {formatCentsToBRL(Math.round(month.realizedAmount * 100))}
+                  {hasGoal && ` de ${formatCentsToBRL(Math.round((month.goalAmount ?? 0) * 100))}`}
+                </span>
               </div>
-              <span className="w-28 shrink-0 text-right text-caption text-foreground">
-                {formatCentsToBRL(Math.round(month.realizedAmount * 100))}
-              </span>
+
+              {hasGoal ? (
+                <Progress value={month.financialPercent} />
+              ) : (
+                <>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full w-0 rounded-full bg-primary" />
+                  </div>
+                  <span className="text-caption text-muted-foreground">Sem meta cadastrada neste mês</span>
+                </>
+              )}
             </div>
           )
         })}

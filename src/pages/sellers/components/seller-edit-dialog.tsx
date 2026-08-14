@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Text } from '@/components/ui/text'
+import { isValidEmail } from '@/utils/masks'
 import type { SellerListItem } from '@/types/sellers'
 
 interface SellerEditDialogProps {
@@ -11,34 +11,56 @@ interface SellerEditDialogProps {
   onOpenChange: (open: boolean) => void
   seller: SellerListItem | null
   submitting: boolean
-  onSubmit: (fullName: string) => void | Promise<void>
+  onSubmit: (values: { full_name: string; email: string }) => void | Promise<void>
 }
 
+const EMPTY_VALUES = { full_name: '', email: '' }
+type FormErrors = Partial<Record<keyof typeof EMPTY_VALUES, string>>
+
 /**
- * Fase 21 — só `full_name` é editável aqui. E-mail e senha não são campos de
- * `public.profiles`: alterá-los exige a Auth Admin API do Supabase
- * (`service_role`/Edge Function), infraestrutura que não existe neste
- * projeto (ver relatório final, seção P/Q). Em vez de esconder isso, o
- * diálogo mostra o e-mail como somente leitura com a explicação, para não
- * dar a entender que a edição foi feita quando não foi.
+ * Fase 23 — nome e e-mail editáveis juntos, salvos numa única chamada à Edge
+ * Function `update-seller` (sellers.service.ts:updateSeller). Até a Fase 22,
+ * o e-mail era somente leitura aqui porque não existia infraestrutura de
+ * Auth Admin API no projeto (ver relatório final da Fase 21/22) — essa
+ * limitação não existe mais.
  */
 export function SellerEditDialog({ open, onOpenChange, seller, submitting, onSubmit }: SellerEditDialogProps) {
-  const [fullName, setFullName] = useState('')
+  const [values, setValues] = useState(EMPTY_VALUES)
+  const [errors, setErrors] = useState<FormErrors>({})
 
   useEffect(() => {
     if (open && seller) {
-      setFullName(seller.full_name)
+      setValues({ full_name: seller.full_name, email: seller.email ?? '' })
+      setErrors({})
     }
   }, [open, seller])
 
+  function set<K extends keyof typeof EMPTY_VALUES>(key: K, value: string) {
+    setValues((prev) => ({ ...prev, [key]: value }))
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }))
+  }
+
+  function validate(): boolean {
+    const nextErrors: FormErrors = {}
+    if (!values.full_name.trim()) nextErrors.full_name = 'Nome completo é obrigatório.'
+    if (!values.email.trim()) {
+      nextErrors.email = 'E-mail é obrigatório.'
+    } else if (!isValidEmail(values.email.trim())) {
+      nextErrors.email = 'E-mail inválido.'
+    }
+    setErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!fullName.trim()) return
-    await onSubmit(fullName.trim())
+    if (submitting) return
+    if (!validate()) return
+    await onSubmit({ full_name: values.full_name.trim(), email: values.email.trim().toLowerCase() })
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => !submitting && onOpenChange(next)}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Editar vendedor</DialogTitle>
@@ -48,23 +70,28 @@ export function SellerEditDialog({ open, onOpenChange, seller, submitting, onSub
             <Input
               label="Nome completo"
               required
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
+              value={values.full_name}
+              onChange={(event) => set('full_name', event.target.value)}
+              error={errors.full_name}
+              disabled={submitting}
             />
-            <div className="flex flex-col gap-1">
-              <Input label="E-mail" value={seller?.email ?? ''} disabled readOnly />
-              <Text variant="caption" className="text-muted-foreground">
-                Alterar e-mail ou senha exige um recurso de administração do Supabase (Edge Function) que ainda não
-                existe neste projeto — não pode ser feito com segurança por aqui.
-              </Text>
-            </div>
+            <Input
+              label="E-mail"
+              type="email"
+              required
+              autoComplete="email"
+              value={values.email}
+              onChange={(event) => set('email', event.target.value)}
+              error={errors.email}
+              disabled={submitting}
+            />
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
               Cancelar
             </Button>
             <Button type="submit" loading={submitting}>
-              {submitting ? 'Salvando...' : 'Salvar'}
+              {submitting ? 'Salvando...' : 'Salvar alterações'}
             </Button>
           </DialogFooter>
         </form>

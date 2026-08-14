@@ -42,7 +42,7 @@ export function useGoalsDashboard({ period, sellers, sellerId, enabled = true }:
       const evolutionPeriods = periodsBack(period, 6)
       const [summaryData, evolutionData, salesData] = await Promise.all([
         listSellerGoalSummaries(period, sellers, sellerId),
-        listMonthlyEvolution(evolutionPeriods, sellerId),
+        listMonthlyEvolution(evolutionPeriods, sellers, sellerId),
         // "Vendas que compõem o realizado" só faz sentido para um único vendedor.
         sellerId
           ? listSales({

@@ -1,4 +1,4 @@
-import { Eye, MoreHorizontal, Pencil, Power, PowerOff, Target, TrendingUp } from 'lucide-react'
+import { Eye, KeyRound, MoreHorizontal, Pencil, Power, PowerOff, Target, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '@/components/ui/avatar'
 import {
@@ -18,6 +18,7 @@ import type { SellerListItem } from '@/types/sellers'
 interface SellersTableProps {
   items: SellerListItem[]
   onEdit: (seller: SellerListItem) => void
+  onResetPassword: (seller: SellerListItem) => void
   onToggleStatus: (seller: SellerListItem) => void
   className?: string
 }
@@ -26,7 +27,7 @@ const HEAD_CLASS = 'uppercase tracking-wide text-caption'
 const CELL_CLASS = 'py-4 text-body-sm'
 
 /** Mesmo padrão de tabela já usado em Matrículas/Alunos (Fase 10/21): colunas com min-w + scroll horizontal, nunca table-fixed em tabelas com muitas colunas. */
-export function SellersTable({ items, onEdit, onToggleStatus, className }: SellersTableProps) {
+export function SellersTable({ items, onEdit, onResetPassword, onToggleStatus, className }: SellersTableProps) {
   return (
     <Table className={className} wrapperClassName="rounded-none border-0">
       <TableHeader className="bg-transparent">
@@ -90,6 +91,10 @@ export function SellersTable({ items, onEdit, onToggleStatus, className }: Selle
                   <DropdownMenuItem onSelect={() => onEdit(seller)}>
                     <Pencil className="size-4" aria-hidden="true" />
                     Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onResetPassword(seller)}>
+                    <KeyRound className="size-4" aria-hidden="true" />
+                    Alterar senha
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => onToggleStatus(seller)}>
                     {seller.is_active ? (

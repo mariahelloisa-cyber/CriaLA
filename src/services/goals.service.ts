@@ -226,30 +226,88 @@ export async function getMySellerRank(fromIso: string, toIso: string): Promise<M
 }
 
 /**
- * Evolução simples: realizado por mês numa lista de períodos (tipicamente os
- * últimos 6 meses). Uma única query cobrindo o intervalo inteiro, agrupada
- * em memória por mês — não uma query por mês.
+ * Todas as metas (histórico completo, sem filtro de mês/ano) dos vendedores
+ * informados — uma única query, mesmo padrão de "query ampla + agregação em
+ * memória" já usado em todo o serviço. `goals` é uma tabela pequena (1 linha
+ * por vendedor por mês), então buscar o histórico inteiro de um conjunto de
+ * vendedores e filtrar em memória pelos meses de interesse (feito pelo
+ * chamador) é mais simples e barato do que uma query por mês.
  */
-export async function listMonthlyEvolution(periods: Period[], sellerId?: string): Promise<MonthlyRealized[]> {
+async function listGoalsForSellers(sellerIds: string[]): Promise<Goal[]> {
+  if (sellerIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('goals')
+    .select('id, seller_id, reference_month, reference_year, financial_target, student_target')
+    .in('seller_id', sellerIds)
+
+  if (error) {
+    throw mapError(error, 'Não foi possível carregar as metas do período.')
+  }
+
+  return data ?? []
+}
+
+/**
+ * Evolução: realizado x meta por mês numa lista de períodos (tipicamente os
+ * últimos 6 meses). Duas queries no total (vendas do intervalo + metas dos
+ * vendedores do escopo), nunca uma por mês/vendedor — mesmo padrão de
+ * `listSellerGoalSummariesForRange`. `sellers` é necessário para a visão de
+ * equipe (soma da meta de todos); `sellerId`, quando informado, restringe
+ * tanto vendas quanto metas a um único vendedor (mesma regra de
+ * `listSellerGoalSummariesForRange`).
+ *
+ * Percentual usa a MESMA fórmula de `summarizeSellers` (target>0 ?
+ * realizado/target*100 : 0) — nenhuma fórmula nova (Fase 23).
+ */
+export async function listMonthlyEvolution(
+  periods: Period[],
+  sellers: SellerOption[],
+  sellerId?: string,
+): Promise<MonthlyRealized[]> {
   if (periods.length === 0) return []
 
   const from = firstDayOfPeriodIso(periods[0]!)
   const to = lastDayOfPeriodIso(periods[periods.length - 1]!)
-  const rows = await listRealizedSalesForRange(from, to, sellerId)
+  const sellerIds = sellerId ? [sellerId] : sellers.map((s) => s.id)
 
-  const bucket = new Map<string, { amount: number; students: number }>()
-  for (const row of rows) {
+  const [salesRows, goalRows] = await Promise.all([
+    listRealizedSalesForRange(from, to, sellerId),
+    listGoalsForSellers(sellerIds),
+  ])
+
+  const salesBucket = new Map<string, { amount: number; students: number }>()
+  for (const row of salesRows) {
     const key = row.sale_date.slice(0, 7) // "YYYY-MM" — agrupa pela data da venda, nunca por created_at
-    const acc = bucket.get(key) ?? { amount: 0, students: 0 }
+    const acc = salesBucket.get(key) ?? { amount: 0, students: 0 }
     acc.amount += row.goal_amount
     acc.students += row.goal_student_count
-    bucket.set(key, acc)
+    salesBucket.set(key, acc)
+  }
+
+  const goalBucket = new Map<string, { amount: number; students: number }>()
+  for (const row of goalRows) {
+    const key = `${row.reference_year}-${String(row.reference_month).padStart(2, '0')}`
+    const acc = goalBucket.get(key) ?? { amount: 0, students: 0 }
+    acc.amount += row.financial_target
+    acc.students += row.student_target
+    goalBucket.set(key, acc)
   }
 
   return periods.map((period) => {
     const key = `${period.year}-${String(period.month).padStart(2, '0')}`
-    const acc = bucket.get(key) ?? { amount: 0, students: 0 }
-    return { month: period.month, year: period.year, realizedAmount: acc.amount, realizedStudents: acc.students }
+    const sales = salesBucket.get(key) ?? { amount: 0, students: 0 }
+    const goal = goalBucket.get(key) ?? null
+
+    return {
+      month: period.month,
+      year: period.year,
+      realizedAmount: sales.amount,
+      realizedStudents: sales.students,
+      goalAmount: goal ? goal.amount : null,
+      goalStudentCount: goal ? goal.students : null,
+      financialPercent: goal && goal.amount > 0 ? (sales.amount / goal.amount) * 100 : 0,
+    }
   })
 }
 
