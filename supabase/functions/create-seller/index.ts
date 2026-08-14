@@ -139,5 +139,3 @@ Deno.serve(async (req: Request) => {
 
   return jsonResponse({ id: created.user.id }, 200)
 })
-
-export { FunctionsHttpError }
