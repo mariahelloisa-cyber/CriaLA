@@ -66,6 +66,7 @@ export function EnrollmentsFilters({
     filters.courseId,
     filters.classId,
     filters.unitId,
+    filters.categoryId,
     filters.enrollmentDateFrom,
     filters.enrollmentDateTo,
     filters.sellerId,
@@ -139,6 +140,19 @@ export function EnrollmentsFilters({
                 {options.units.map((unit) => (
                   <option key={unit.id} value={unit.id}>
                     {unit.name}
+                  </option>
+                ))}
+              </Select>
+
+              <Select
+                label="Categoria"
+                value={filters.categoryId ?? ''}
+                onChange={(event) => onChange({ categoryId: event.target.value || null })}
+              >
+                <option value="">Todas</option>
+                {options.categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
                   </option>
                 ))}
               </Select>

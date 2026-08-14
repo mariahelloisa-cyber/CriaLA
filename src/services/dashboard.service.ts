@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { todayIso } from '@/utils/format-date'
+import { graduationWindowRange } from '@/utils/academic-status'
 import { currentPeriod, firstDayOfPeriodIso, lastDayOfPeriodIso, periodsBack } from '@/utils/period'
 import type { CategoryStudentCount, EnrollmentsByMonth, UpcomingGraduation } from '@/types/dashboard'
 
@@ -45,17 +45,14 @@ export async function countActiveEnrollments(): Promise<number> {
   return count ?? 0
 }
 
-const GRADUATION_WINDOW_DAYS = 90
-
 /**
- * "Próximas Formaturas": matrículas ativas com expected_graduation_date nos
- * próximos 90 dias — o PDF não define a janela; 90 dias é uma escolha de
- * implementação conservadora e documentada (mesmo padrão de decisões não
- * especificadas nas Fases 11/12/13).
+ * "Próximas Formaturas": matrículas ativas com expected_graduation_date
+ * dentro da janela definida em utils/academic-status.ts (Fase 24) — mesma
+ * regra usada pelo relatório acadêmico "Alunos com Formação Próxima"
+ * (filterUpcomingGraduations), agora numa única fonte.
  */
 export async function listUpcomingGraduations(limit = 8): Promise<UpcomingGraduation[]> {
-  const today = todayIso()
-  const windowEnd = new Date(Date.now() + GRADUATION_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const { from, to } = graduationWindowRange()
 
   const { data, error } = await supabase
     .from('enrollments')
@@ -65,8 +62,8 @@ export async function listUpcomingGraduations(limit = 8): Promise<UpcomingGradua
        class:classes(course:courses(name))`,
     )
     .eq('status', 'active')
-    .gte('expected_graduation_date', today)
-    .lte('expected_graduation_date', windowEnd)
+    .gte('expected_graduation_date', from)
+    .lte('expected_graduation_date', to)
     .order('expected_graduation_date', { ascending: true })
     .limit(limit)
 

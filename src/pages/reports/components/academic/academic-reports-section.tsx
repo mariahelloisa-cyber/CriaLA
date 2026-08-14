@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAcademicFilterOptions } from '../../hooks/use-academic-filter-options'
 import { useAcademicReportsData } from '../../hooks/use-academic-reports-data'
 import type { AcademicReportFilters } from '@/services/academic-reports.service'
+import type { SellerOption } from '@/types/goals'
 import { AcademicReportsFilters } from './academic-reports-filters'
 import { GraduatedStudentsReport } from './graduated-students-report'
 import { StudentsByCategoryReport } from './students-by-category-report'
@@ -20,21 +21,30 @@ const DEFAULT_FILTERS: AcademicReportFilters = {
   classId: null,
   unitId: null,
   categoryId: null,
+  sellerId: null,
 }
 
 type AcademicTab = 'class' | 'course' | 'category' | 'period' | 'unit' | 'training' | 'graduating' | 'graduated'
 
+interface AcademicReportsSectionProps {
+  isManager: boolean
+  sellers: SellerOption[]
+}
+
 /**
  * Seção "Acadêmicos" de /relatorios (Fase 17 — PDF seção 8). Uma única
  * query (useAcademicReportsData) alimenta os 7 relatórios; os filtros
- * estruturais (Curso/Turma/Unidade/Categoria) são compartilhados por todos,
- * "Por Período" tem seu próprio intervalo local (ver
+ * estruturais (Curso/Turma/Unidade/Categoria/Vendedor) são compartilhados
+ * por todos, "Por Período" tem seu próprio intervalo local (ver
  * students-by-period-report.tsx). Respeita a mesma RLS de sempre —
  * enrollments_select já restringe o vendedor às matrículas dos próprios
  * alunos, então todo relatório aqui (inclusive as agregações) reflete só o
  * que a sessão dele pode ver, nunca dados globais de outros vendedores.
+ *
+ * `isManager`/`sellers` vêm do useScopedSellers já chamado por reports-page.tsx
+ * (Fase 25) — nenhuma query de vendedores nova aqui, só reaproveitamento.
  */
-export function AcademicReportsSection() {
+export function AcademicReportsSection({ isManager, sellers }: AcademicReportsSectionProps) {
   const [filters, setFilters] = useState<AcademicReportFilters>(DEFAULT_FILTERS)
   const [activeTab, setActiveTab] = useState<AcademicTab>('class')
   const options = useAcademicFilterOptions()
@@ -48,7 +58,13 @@ export function AcademicReportsSection() {
 
   return (
     <div className="flex flex-col gap-6">
-      <AcademicReportsFilters filters={filters} onChange={updateFilters} options={options} />
+      <AcademicReportsFilters
+        filters={filters}
+        onChange={updateFilters}
+        options={options}
+        isManager={isManager}
+        sellers={sellers}
+      />
 
       {state === 'loading' && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

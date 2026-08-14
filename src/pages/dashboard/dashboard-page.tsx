@@ -9,9 +9,11 @@ import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/constants/routes'
 import { useShellUser } from '@/hooks/useShellUser'
 import { GoalSummaryCards } from '@/pages/goals/components/goal-summary-cards'
+import { MyRankCard } from '@/pages/goals/components/my-rank-card'
 import { PeriodSelector } from '@/pages/goals/components/period-selector'
 import { useGoalPeriod } from '@/pages/goals/hooks/use-goal-period'
 import { useGoalsDashboard } from '@/pages/goals/hooks/use-goals-dashboard'
+import { useMyRank } from '@/pages/goals/hooks/use-my-rank'
 import { useScopedSellers } from '@/pages/goals/hooks/use-scoped-sellers'
 import { currentPeriod, periodsEqual } from '@/utils/period'
 import { EnrollmentsByMonthCard } from './components/enrollments-by-month-card'
@@ -74,6 +76,13 @@ export function DashboardPage() {
     retry: retryEnrollmentsByMonth,
   } = useEnrollmentsByMonth()
 
+  // "Ranking pessoal" (PDF seção 7, Dashboard do Vendedor) — mesmo hook/RPC
+  // já usado em /metas (Fase 19), só passou a ser renderizado aqui também.
+  // enabled=!isManager garante que um gerente nunca dispara esta consulta
+  // nem recebe o card (get_my_seller_rank só faz sentido para quem é de fato
+  // vendedor logado — devolve só os números do próprio auth.uid()).
+  const { data: myRank, state: myRankState } = useMyRank(!isManager)
+
   const ownSummary = !isManager ? (summaries[0] ?? null) : null
 
   return (
@@ -112,7 +121,12 @@ export function DashboardPage() {
           />
         )}
 
-        {goalsState === 'success' && !isManager && ownSummary && <GoalSummaryCards summary={ownSummary} />}
+        {goalsState === 'success' && !isManager && ownSummary && (
+          <div className="flex flex-col gap-6">
+            <GoalSummaryCards summary={ownSummary} />
+            {myRankState === 'success' && myRank && <MyRankCard data={myRank} />}
+          </div>
+        )}
 
         {goalsState === 'success' && isManager && (
           <div className="flex flex-col gap-6">

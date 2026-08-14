@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { todayIso } from '@/utils/format-date'
+import { isActiveEnrollment, isGraduatedEnrollment, isUpcomingGraduation } from '@/utils/academic-status'
 import type { ClassStatus, EnrollmentStatus } from '@/types/students'
 
 interface PostgrestLikeError {
@@ -19,6 +19,8 @@ export interface AcademicReportFilters {
   classId: string | null
   unitId: string | null
   categoryId: string | null
+  /** Só o gerente pode filtrar por vendedor — RLS já restringe o vendedor às próprias matrículas de qualquer forma. */
+  sellerId: string | null
 }
 
 /**
@@ -52,7 +54,7 @@ interface RawEnrollmentRow {
   enrollment_date: string
   expected_graduation_date: string | null
   status: EnrollmentStatus
-  student: { id: string; full_name: string }
+  student: { id: string; full_name: string; created_by: string }
   class: {
     id: string
     name: string
@@ -79,7 +81,7 @@ async function resolveCourseIdsForCategory(categoryId: string): Promise<string[]
 export async function fetchEnrollmentsForAcademicReport(filters: AcademicReportFilters): Promise<AcademicEnrollmentRow[]> {
   let query = supabase.from('enrollments').select(
     `id, student_id, enrollment_date, expected_graduation_date, status,
-     student:students!inner(id, full_name),
+     student:students!inner(id, full_name, created_by),
      class:classes!inner(id, name, status,
        unit:units(id, name),
        course:courses(id, name, category:course_categories(id, name))
@@ -93,6 +95,10 @@ export async function fetchEnrollmentsForAcademicReport(filters: AcademicReportF
     const courseIds = await resolveCourseIdsForCategory(filters.categoryId)
     query = query.in('class.course_id', courseIds.length > 0 ? courseIds : ['00000000-0000-0000-0000-000000000000'])
   }
+  // "Vendedor responsável pelo aluno" (Fase 25) = students.created_by, mesma
+  // relação já usada em enrollments.service.ts (filtro de Matrículas) e em
+  // dashboard.service.ts (contagens por vendedor) — nenhuma relação nova.
+  if (filters.sellerId) query = query.eq('student.created_by', filters.sellerId)
 
   const { data, error } = await query
 
@@ -290,30 +296,18 @@ export function aggregateByPeriod(rows: AcademicEnrollmentRow[], dateFrom: strin
  * Em Formação / Próximas Formaturas / Formados: relatórios de LISTAGEM, não
  * de contagem agregada — cada linha é uma matrícula real, sem deduplicação
  * (um aluno com 2 matrículas ativas simultâneas legitimamente aparece 2
- * vezes, uma por matrícula). Mesmo critério já usado no Dashboard
- * (countActiveEnrollments/listUpcomingGraduations contam linhas de
- * enrollments, não alunos distintos) — reaproveitado aqui por instrução
- * explícita de não criar uma regra diferente da já usada no Dashboard.
+ * vezes, uma por matrícula). Critério de cada um vem de
+ * `utils/academic-status.ts` (Fase 24) — a mesma regra usada pelo Dashboard
+ * (countActiveEnrollments/listUpcomingGraduations), agora numa única fonte
+ * em vez de reimplementada aqui.
  */
 export function filterActiveEnrollments(rows: AcademicEnrollmentRow[]): AcademicEnrollmentRow[] {
-  return rows.filter((row) => row.status === 'active')
+  return rows.filter((row) => isActiveEnrollment(row.status))
 }
 
-const GRADUATION_WINDOW_DAYS = 90
-
-/** Mesma janela de 90 dias do Dashboard (Fase 14) — o PDF não define uma janela; mantida para consistência, conforme instruído. */
 export function filterUpcomingGraduations(rows: AcademicEnrollmentRow[]): AcademicEnrollmentRow[] {
-  const today = todayIso()
-  const windowEnd = new Date(Date.now() + GRADUATION_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-
   return rows
-    .filter(
-      (row) =>
-        row.status === 'active' &&
-        row.expectedGraduationDate !== null &&
-        row.expectedGraduationDate >= today &&
-        row.expectedGraduationDate <= windowEnd,
-    )
+    .filter((row) => isUpcomingGraduation(row.status, row.expectedGraduationDate))
     .sort((a, b) => (a.expectedGraduationDate ?? '').localeCompare(b.expectedGraduationDate ?? ''))
 }
 
@@ -324,5 +318,5 @@ export function filterUpcomingGraduations(rows: AcademicEnrollmentRow[]): Academ
  * necessário inventar nenhuma regra baseada em data.
  */
 export function filterGraduatedEnrollments(rows: AcademicEnrollmentRow[]): AcademicEnrollmentRow[] {
-  return rows.filter((row) => row.status === 'completed')
+  return rows.filter((row) => isGraduatedEnrollment(row.status))
 }

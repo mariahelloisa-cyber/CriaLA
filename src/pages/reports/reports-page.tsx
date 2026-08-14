@@ -18,6 +18,7 @@ import { PaymentMethodReport } from './components/payment-method-report'
 import { PeriodReport } from './components/period-report'
 import { ReportsFilters } from './components/reports-filters'
 import { ReportsSummaryCards } from './components/reports-summary-cards'
+import { SellerRankingReport } from './components/seller-ranking-report'
 import { SellersReportTable } from './components/sellers-report-table'
 import { useReportsData } from './hooks/use-reports-data'
 
@@ -30,12 +31,12 @@ const DEFAULT_OTHER_FILTERS: OtherFilters = {
   categoryId: null,
 }
 
-type CommercialTab = 'sellers' | 'period' | 'goals' | 'payment' | 'category'
+type CommercialTab = 'sellers' | 'ranking' | 'period' | 'goals' | 'payment' | 'category'
 type TopTab = 'commercial' | 'academic'
 
 export function ReportsPage() {
   const shellUser = useShellUser()
-  const { isManager, sellers, sellerFilter, setSellerFilter, scopedSellers, ownSeller } = useScopedSellers()
+  const { isManager, sellers, sellerFilter, setSellerFilter, scopedSellers, ownSeller, enabled } = useScopedSellers()
   const [otherFilters, setOtherFilters] = useState<OtherFilters>(DEFAULT_OTHER_FILTERS)
   const [categories, setCategories] = useState<CourseCategory[]>([])
   const [topTab, setTopTab] = useState<TopTab>('commercial')
@@ -134,6 +135,7 @@ export function ReportsPage() {
                   <Tabs value={commercialTab} onValueChange={(value) => setCommercialTab(value as CommercialTab)}>
                     <TabsList>
                       <TabsTrigger value="sellers">Por vendedor</TabsTrigger>
+                      <TabsTrigger value="ranking">Ranking de vendedores</TabsTrigger>
                       <TabsTrigger value="period">Por período</TabsTrigger>
                       <TabsTrigger value="goals">Metas x realizado</TabsTrigger>
                       <TabsTrigger value="payment">Forma de pagamento</TabsTrigger>
@@ -142,6 +144,13 @@ export function ReportsPage() {
 
                     <TabsContent value="sellers">
                       <SellersReportTable items={bySeller} isFullMonth={Boolean(fullMonth)} />
+                    </TabsContent>
+
+                    {/* Só monta (e só consulta o ranking) quando a aba está aberta — mesmo cuidado das abas "goals"/"academic". */}
+                    <TabsContent value="ranking">
+                      {commercialTab === 'ranking' && (
+                        <SellerRankingReport isManager={isManager} sellers={sellers} enabled={enabled} />
+                      )}
                     </TabsContent>
 
                     <TabsContent value="period">
@@ -166,8 +175,10 @@ export function ReportsPage() {
             </div>
           </TabsContent>
 
-          {/* Só monta (e só consulta enrollments) quando a aba Acadêmicos está aberta — mesmo cuidado de performance da aba "Metas x realizado" acima. */}
-          <TabsContent value="academic">{topTab === 'academic' && <AcademicReportsSection />}</TabsContent>
+          {/* Só monta (e só consulta enrollments) quando a aba Acadêmicos está aberta — mesmo cuidado de performance da aba "Metas x realizado" acima. `sellers`/`isManager` reaproveitam o useScopedSellers já chamado no topo desta página — nenhuma query de vendedores nova. */}
+          <TabsContent value="academic">
+            {topTab === 'academic' && <AcademicReportsSection isManager={isManager} sellers={sellers} />}
+          </TabsContent>
         </Tabs>
       </div>
     </AppShell>

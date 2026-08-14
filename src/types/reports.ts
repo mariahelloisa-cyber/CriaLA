@@ -38,7 +38,6 @@ export interface SellerReportItem {
   salesCount: number
   amount: number
   students: number
-  /** null = "não aplicável" (intervalo selecionado não é um mês cheio, ou sem meta cadastrada nesse mês). */
   financialPercent: number | null
 }
 

@@ -8,6 +8,7 @@ export const DEFAULT_ENROLLMENT_FILTERS: EnrollmentFilters = {
   courseId: null,
   classId: null,
   unitId: null,
+  categoryId: null,
   enrollmentDateFrom: null,
   enrollmentDateTo: null,
   sellerId: null,
@@ -69,6 +70,7 @@ export function useEnrollmentsList() {
     filters.courseId !== null ||
     filters.classId !== null ||
     filters.unitId !== null ||
+    filters.categoryId !== null ||
     filters.enrollmentDateFrom !== null ||
     filters.enrollmentDateTo !== null ||
     filters.sellerId !== null

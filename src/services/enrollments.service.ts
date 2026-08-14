@@ -124,6 +124,13 @@ export async function listEnrollments(filters: EnrollmentFilters): Promise<Pagin
   if (filters.unitId) {
     query = query.eq('class.unit_id', filters.unitId)
   }
+  if (filters.categoryId) {
+    // Mesma técnica já comprovada em students.service.ts:listStudents —
+    // category_id é coluna direta de `courses`, então filtrar 2 hops de
+    // embed (`class.course.category_id`) funciona sem precisar resolver ids
+    // auxiliares primeiro.
+    query = query.eq('class.course.category_id', filters.categoryId)
+  }
   if (filters.enrollmentDateFrom) {
     query = query.gte('enrollment_date', filters.enrollmentDateFrom)
   }

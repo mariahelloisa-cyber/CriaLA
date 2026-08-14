@@ -50,6 +50,7 @@ export interface EnrollmentFilters {
   courseId: string | null
   classId: string | null
   unitId: string | null
+  categoryId: string | null
   enrollmentDateFrom: string | null
   enrollmentDateTo: string | null
   /** Somente gerente pode filtrar por vendedor (mesmo padrão do módulo de Alunos). */

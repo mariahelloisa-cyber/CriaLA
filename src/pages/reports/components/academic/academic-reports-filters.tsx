@@ -1,11 +1,15 @@
 import { Select } from '@/components/ui/select'
 import type { AcademicReportFilters } from '@/services/academic-reports.service'
+import type { SellerOption } from '@/types/goals'
 import type { AcademicFilterOptions } from '../../hooks/use-academic-filter-options'
 
 interface AcademicReportsFiltersProps {
   filters: AcademicReportFilters
   onChange: (patch: Partial<AcademicReportFilters>) => void
   options: AcademicFilterOptions
+  /** Só o gerente vê o filtro de Vendedor — mesmo padrão de reports-filters.tsx/enrollments-filters.tsx/students-filters.tsx. */
+  isManager: boolean
+  sellers: SellerOption[]
 }
 
 /**
@@ -16,8 +20,14 @@ interface AcademicReportsFiltersProps {
  * inerentemente mensal só no relatório "Por Período", que tem seu próprio
  * seletor local (mesmo padrão de "Metas x realizado" da Fase 13, que também
  * usa um período independente do resto da página).
+ *
+ * Vendedor (Fase 25): fecha a última das 6 dimensões de filtro exigidas pelo
+ * PDF (seção 10) que faltava aqui. Escondido para o próprio vendedor — RLS
+ * (enrollments_select) já restringe a sessão dele às próprias matrículas, e
+ * expor um seletor "escolha outro vendedor" que não faria nada real seria
+ * confuso, mesmo critério já usado nos outros 3 módulos com esse filtro.
  */
-export function AcademicReportsFilters({ filters, onChange, options }: AcademicReportsFiltersProps) {
+export function AcademicReportsFilters({ filters, onChange, options, isManager, sellers }: AcademicReportsFiltersProps) {
   return (
     <div className="grid grid-cols-1 gap-4 rounded-md border border-border p-4 sm:grid-cols-2 lg:grid-cols-4">
       <Select
@@ -68,6 +78,20 @@ export function AcademicReportsFilters({ filters, onChange, options }: AcademicR
           </option>
         ))}
       </Select>
+      {isManager && (
+        <Select
+          label="Vendedor"
+          value={filters.sellerId ?? ''}
+          onChange={(event) => onChange({ sellerId: event.target.value || null })}
+        >
+          <option value="">Todos os vendedores</option>
+          {sellers.map((seller) => (
+            <option key={seller.id} value={seller.id}>
+              {seller.full_name}
+            </option>
+          ))}
+        </Select>
+      )}
     </div>
   )
 }
