@@ -1,7 +1,8 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { listSellerGoalSummariesForRange, rankSellersByValue } from '@/services/goals.service'
 import type { SellerOption } from '@/types/goals'
-import type { SellerListItem } from '@/types/sellers'
+import type { CreateSellerInput, SellerListItem } from '@/types/sellers'
 
 interface PostgrestLikeError {
   message: string
@@ -96,6 +97,12 @@ export async function listSellersOverview(fromIso: string, toIso: string): Promi
  * sales.seller_id continuam apontando para este id normalmente (histórico
  * preservado). AuthContext já trata is_active=false forçando signOut no
  * próximo carregamento de sessão (ver Fase 04) — nenhuma lógica nova aqui.
+ *
+ * Fase 22 — "gerente não pode se autodesativar": não existia essa regra em
+ * nenhuma fase anterior, e não foi criada uma nova aqui. Não é necessária:
+ * listSellersOverview()/getSeller() só trazem role='seller', então o
+ * próprio gerente nunca aparece como linha em /vendedores — não há como
+ * clicar em "Desativar" na própria conta por essa tela, por construção.
  */
 export async function updateSellerStatus(id: string, isActive: boolean): Promise<void> {
   const { error } = await supabase.from('profiles').update({ is_active: isActive }).eq('id', id)
@@ -117,6 +124,35 @@ export async function updateSellerName(id: string, fullName: string): Promise<vo
   if (error) {
     throw mapError(error, 'Não foi possível atualizar o vendedor.')
   }
+}
+
+/**
+ * Fase 22 — cria um vendedor de verdade (usuário do Supabase Auth + profile
+ * via o trigger já existente, handle_new_auth_user). Chama a Edge Function
+ * `create-seller`, único lugar do sistema que usa a service_role — nunca no
+ * client. A function valida no servidor que quem chama é gerente ativo
+ * (mesma condição de public.is_manager()); o frontend não decide isso, só
+ * reflete o que a function autorizou.
+ */
+export async function createSeller(input: CreateSellerInput): Promise<{ id: string }> {
+  const { data, error } = await supabase.functions.invoke('create-seller', {
+    body: input,
+  })
+
+  if (error) {
+    let message = 'Não foi possível criar o vendedor. Tente novamente.'
+    if (error instanceof FunctionsHttpError) {
+      try {
+        const body = await error.context.json()
+        if (typeof body?.error === 'string') message = body.error
+      } catch {
+        // Mantém a mensagem genérica se o corpo do erro não vier como JSON.
+      }
+    }
+    throw new Error(message)
+  }
+
+  return data as { id: string }
 }
 
 export async function getSeller(id: string): Promise<SellerOption & { email: string | null; is_active: boolean } | null> {

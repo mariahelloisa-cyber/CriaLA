@@ -31,3 +31,10 @@ export interface SellerFilters {
   search: string
   status: SellerStatusFilter
 }
+
+/** Fase 22 — payload enviado para a Edge Function create-seller. */
+export interface CreateSellerInput {
+  full_name: string
+  email: string
+  password: string
+}

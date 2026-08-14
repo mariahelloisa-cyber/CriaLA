@@ -12,9 +12,9 @@ import { TableSkeleton } from '@/components/ui/skeleton'
 import { ROUTES } from '@/constants/routes'
 import { toast } from '@/hooks/use-toast'
 import { useShellUser } from '@/hooks/useShellUser'
-import { updateSellerName, updateSellerStatus } from '@/services/sellers.service'
-import type { SellerListItem } from '@/types/sellers'
-import { NewSellerBlockedDialog } from './components/new-seller-blocked-dialog'
+import { createSeller, updateSellerName, updateSellerStatus } from '@/services/sellers.service'
+import type { CreateSellerInput, SellerListItem } from '@/types/sellers'
+import { NewSellerDialog } from './components/new-seller-dialog'
 import { SellerEditDialog } from './components/seller-edit-dialog'
 import { SellerStatusDialog } from './components/seller-status-dialog'
 import { SellersCards } from './components/sellers-cards'
@@ -28,10 +28,29 @@ export function SellersPage() {
     useSellersList()
 
   const [newSellerDialogOpen, setNewSellerDialogOpen] = useState(false)
+  const [creatingSeller, setCreatingSeller] = useState(false)
   const [editingSeller, setEditingSeller] = useState<SellerListItem | null>(null)
   const [savingEdit, setSavingEdit] = useState(false)
   const [statusSeller, setStatusSeller] = useState<SellerListItem | null>(null)
   const [savingStatus, setSavingStatus] = useState(false)
+
+  async function handleCreateSeller(values: CreateSellerInput) {
+    setCreatingSeller(true)
+    try {
+      await createSeller(values)
+      toast({ title: 'Vendedor criado com sucesso.', variant: 'success' })
+      setNewSellerDialogOpen(false)
+      retry()
+    } catch (err) {
+      toast({
+        title: 'Não foi possível criar o vendedor.',
+        description: err instanceof Error ? err.message : undefined,
+        variant: 'error',
+      })
+    } finally {
+      setCreatingSeller(false)
+    }
+  }
 
   async function handleSaveName(fullName: string) {
     if (!editingSeller) return
@@ -181,7 +200,12 @@ export function SellersPage() {
         </Card>
       </div>
 
-      <NewSellerBlockedDialog open={newSellerDialogOpen} onOpenChange={setNewSellerDialogOpen} />
+      <NewSellerDialog
+        open={newSellerDialogOpen}
+        onOpenChange={setNewSellerDialogOpen}
+        submitting={creatingSeller}
+        onSubmit={handleCreateSeller}
+      />
 
       <SellerEditDialog
         open={editingSeller !== null}
