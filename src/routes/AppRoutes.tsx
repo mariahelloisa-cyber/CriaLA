@@ -31,6 +31,10 @@ import {
   StudentEditPage,
   StudentNewPage,
   StudentsPage,
+  TeacherDetailPage,
+  TeacherEditPage,
+  TeacherNewPage,
+  TeachersPage,
   UnitDetailPage,
   UnitEditPage,
   UnitNewPage,
@@ -300,6 +304,46 @@ export function AppRoutes() {
           <ProtectedRoute>
             <RoleRoute allowedRoles={['manager']}>
               <SellerDetailPage />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.teachers}
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={['manager']}>
+              <TeachersPage />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.teacherNew}
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={['manager']}>
+              <TeacherNewPage />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.teacherEdit(':id')}
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={['manager']}>
+              <TeacherEditPage />
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.teacherDetail(':id')}
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={['manager']}>
+              <TeacherDetailPage />
             </RoleRoute>
           </ProtectedRoute>
         }

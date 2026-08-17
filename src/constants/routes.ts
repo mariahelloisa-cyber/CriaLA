@@ -37,6 +37,10 @@ export const ROUTES = {
   goals: '/metas',
   sellers: '/vendedores',
   sellerDetail: (id: string) => `/vendedores/${id}`,
+  teachers: '/professores',
+  teacherNew: '/professores/novo',
+  teacherDetail: (id: string) => `/professores/${id}`,
+  teacherEdit: (id: string) => `/professores/${id}/editar`,
   reports: '/relatorios',
 } as const
 

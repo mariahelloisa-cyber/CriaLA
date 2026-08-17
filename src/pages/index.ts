@@ -9,6 +9,7 @@ export { EnrollmentsPage, EnrollmentNewPage, EnrollmentEditPage, EnrollmentDetai
 export { SalesPage, SaleNewPage, SaleEditPage, SaleDetailPage } from './sales'
 export { GoalsPage } from './goals'
 export { SellersPage, SellerDetailPage } from './sellers'
+export { TeachersPage, TeacherNewPage, TeacherEditPage, TeacherDetailPage } from './teachers'
 export { ReportsPage } from './reports'
 export { DashboardPage } from './dashboard'
 export { ComingSoonPage } from './placeholder'
