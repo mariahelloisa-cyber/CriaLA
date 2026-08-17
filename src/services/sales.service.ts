@@ -345,6 +345,7 @@ export async function createSaleWithInstallments(input: CreateSaleInput): Promis
     p_payment_plan: input.payment_plan,
     p_sale_date: input.sale_date,
     p_installments: input.installments,
+    p_seller_id: input.seller_id || null,
   })
 
   if (error) {
@@ -375,6 +376,7 @@ export async function createEnrollmentWithSale(
     p_payment_plan: input.payment_plan,
     p_sale_date: input.sale_date,
     p_installments: input.installments,
+    p_seller_id: input.seller_id || null,
   })
 
   if (error) {

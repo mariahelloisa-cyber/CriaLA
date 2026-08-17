@@ -43,6 +43,12 @@ export function CourseForm({ mode, initialValues, categoryOptions, submitting, o
     if (!values.category_id) {
       nextErrors.category_id = 'Selecione uma categoria.'
     }
+    if (
+      values.total_units.trim() &&
+      (!Number.isInteger(Number(values.total_units)) || Number(values.total_units) <= 0)
+    ) {
+      nextErrors.total_units = 'Informe um número inteiro maior que zero, ou deixe em branco.'
+    }
 
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
@@ -87,6 +93,17 @@ export function CourseForm({ mode, initialValues, categoryOptions, submitting, o
               </option>
             ))}
           </Select>
+
+          <Input
+            label="Quantidade de unidades (semestres)"
+            type="number"
+            min={1}
+            step={1}
+            placeholder="Opcional"
+            value={values.total_units}
+            onChange={(event) => set('total_units', event.target.value)}
+            error={errors.total_units}
+          />
 
           <div className="flex items-end pb-2">
             <Switch

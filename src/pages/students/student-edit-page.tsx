@@ -160,6 +160,8 @@ export function StudentEditPage() {
         initialValues={initialValues}
         classOptions={classOptions}
         canEditAcademic={isManager}
+        isManager={isManager}
+        sellerOptions={[]}
         submitting={submitting}
         onSubmit={handleSubmit}
         onCancel={() => navigate(ROUTES.studentDetail(id))}

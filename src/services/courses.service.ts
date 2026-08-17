@@ -14,7 +14,7 @@ import type { PaginatedResult } from '@/types/classes'
 export { listCourseCategories }
 
 const COURSE_SELECT = `
-  id, name, description, is_active,
+  id, name, description, is_active, total_units,
   category:course_categories(id, name, slug)
 `
 

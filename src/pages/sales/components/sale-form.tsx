@@ -30,6 +30,11 @@ const PAYMENT_METHOD_OPTIONS: PaymentMethod[] = ['cash', 'credit_card', 'bank_sl
  */
 const MAX_INSTALLMENTS = 12
 
+interface SellerOption {
+  id: string
+  full_name: string
+}
+
 interface SaleFormProps {
   initialValues: SaleFormValues
   submitting: boolean
@@ -43,6 +48,12 @@ interface SaleFormProps {
    * inalterado para quem não passar essa prop).
    */
   courseOptions?: Course[]
+  /**
+   * Vendedores para o seletor opcional "Vendedor" — /vendas/nova é
+   * manager-only por RoleRoute, então este campo é sempre exibido (sem
+   * checagem extra de role aqui).
+   */
+  sellerOptions: SellerOption[]
 }
 
 type FormErrors = Partial<Record<keyof SaleFormValues, string>> & {
@@ -52,7 +63,7 @@ type FormErrors = Partial<Record<keyof SaleFormValues, string>> & {
   enrollment_date?: string
 }
 
-export function SaleForm({ initialValues, submitting, onSubmit, onCancel, courseOptions }: SaleFormProps) {
+export function SaleForm({ initialValues, submitting, onSubmit, onCancel, courseOptions, sellerOptions }: SaleFormProps) {
   const [values, setValues] = useState<SaleFormValues>(initialValues)
   const [enrollment, setEnrollment] = useState<EligibleEnrollment | null>(null)
   const [errors, setErrors] = useState<FormErrors>({})
@@ -302,6 +313,21 @@ export function SaleForm({ initialValues, submitting, onSubmit, onCancel, course
         </CardHeader>
         <Separator />
         <CardContent className="grid grid-cols-1 gap-5 pt-5 sm:grid-cols-2">
+          <Select
+            label="Vendedor"
+            value={values.seller_id}
+            onChange={(event) => set('seller_id', event.target.value)}
+            helperText="Opcional — deixe em branco para manter o vendedor do aluno."
+            containerClassName="sm:col-span-2"
+          >
+            <option value="">Vendedor do aluno (padrão)</option>
+            {sellerOptions.map((seller) => (
+              <option key={seller.id} value={seller.id}>
+                {seller.full_name}
+              </option>
+            ))}
+          </Select>
+
           <CurrencyInput
             label="Valor da venda"
             required

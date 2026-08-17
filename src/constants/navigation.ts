@@ -1,7 +1,6 @@
 import {
   Banknote,
   BookOpen,
-  Building2,
   ClipboardList,
   Contact,
   FileBarChart2,
@@ -70,7 +69,6 @@ export const NAVIGATION: NavGroup[] = [
     label: 'Acadêmico',
     items: [
       { label: 'Cursos', href: ROUTES.courses, icon: BookOpen },
-      { label: 'Unidades', href: ROUTES.units, icon: Building2 },
       { label: 'Turmas', href: ROUTES.classes, icon: GraduationCap },
       { label: 'Matrículas', href: ROUTES.enrollments, icon: ClipboardList },
       { label: 'Professores', href: ROUTES.teachers, icon: Contact, roles: ['manager'] },

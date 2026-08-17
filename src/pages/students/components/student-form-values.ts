@@ -17,6 +17,7 @@ export interface StudentFormValues {
   class_id: string
   enrollment_date: string
   expected_graduation_date: string
+  seller_id: string
 }
 
 export const EMPTY_STUDENT_FORM_VALUES: StudentFormValues = {
@@ -38,4 +39,5 @@ export const EMPTY_STUDENT_FORM_VALUES: StudentFormValues = {
   class_id: '',
   enrollment_date: '',
   expected_graduation_date: '',
+  seller_id: '',
 }

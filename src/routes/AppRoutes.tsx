@@ -35,10 +35,6 @@ import {
   TeacherEditPage,
   TeacherNewPage,
   TeachersPage,
-  UnitDetailPage,
-  UnitEditPage,
-  UnitNewPage,
-  UnitsPage,
 } from '@/pages'
 
 export function AppRoutes() {
@@ -163,42 +159,6 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <CourseDetailPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.units}
-        element={
-          <ProtectedRoute>
-            <UnitsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.unitNew}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={['manager']}>
-              <UnitNewPage />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.unitEdit(':id')}
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={['manager']}>
-              <UnitEditPage />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.unitDetail(':id')}
-        element={
-          <ProtectedRoute>
-            <UnitDetailPage />
           </ProtectedRoute>
         }
       />

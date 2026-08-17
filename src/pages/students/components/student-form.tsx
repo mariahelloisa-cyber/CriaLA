@@ -15,6 +15,11 @@ import type { ClassOption } from '@/types/students'
 import { ClassStatusBadge } from './status-badges'
 import type { StudentFormValues } from './student-form-values'
 
+interface SellerOption {
+  id: string
+  full_name: string
+}
+
 interface StudentFormProps {
   mode: 'create' | 'edit'
   initialValues: StudentFormValues
@@ -22,6 +27,9 @@ interface StudentFormProps {
   classOptions: ClassOption[]
   /** Falso para vendedor em modo edição — PDF/RLS não concedem a ele editar matrícula. */
   canEditAcademic: boolean
+  /** Só o gerente pode escolher o vendedor do cadastro — vendedor sempre cadastra em nome de si mesmo. */
+  isManager: boolean
+  sellerOptions: SellerOption[]
   submitting: boolean
   onSubmit: (values: StudentFormValues) => void | Promise<void>
   onCancel: () => void
@@ -35,6 +43,8 @@ export function StudentForm({
   studentId,
   classOptions,
   canEditAcademic,
+  isManager,
+  sellerOptions,
   submitting,
   onSubmit,
   onCancel,
@@ -225,6 +235,23 @@ export function StudentForm({
           )}
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {mode === 'create' && isManager && (
+              <Select
+                label="Vendedor"
+                value={values.seller_id}
+                onChange={(event) => set('seller_id', event.target.value)}
+                helperText="Opcional — deixe em branco para cadastrar em seu próprio nome."
+                containerClassName="sm:col-span-2"
+              >
+                <option value="">Eu mesmo</option>
+                {sellerOptions.map((seller) => (
+                  <option key={seller.id} value={seller.id}>
+                    {seller.full_name}
+                  </option>
+                ))}
+              </Select>
+            )}
+
             {canEditAcademic ? (
               <Select
                 label="Turma"

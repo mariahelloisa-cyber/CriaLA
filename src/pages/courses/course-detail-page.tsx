@@ -155,6 +155,10 @@ export function CourseDetailPage() {
                 <span className="text-caption text-muted-foreground">Status</span>
                 <ActiveStatusBadge isActive={course.is_active} className="rounded-full" />
               </div>
+              <InfoField
+                label="Unidades (semestres)"
+                value={course.total_units != null ? String(course.total_units) : null}
+              />
               <InfoField label="Descrição" value={course.description} />
             </CardContent>
           </Card>

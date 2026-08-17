@@ -78,6 +78,7 @@ export function CourseEditPage() {
     category_id: course.category?.id ?? '',
     description: course.description ?? '',
     is_active: course.is_active,
+    total_units: course.total_units != null ? String(course.total_units) : '',
   }
 
   async function handleSubmit(values: CourseFormValues) {
@@ -88,6 +89,7 @@ export function CourseEditPage() {
         category_id: values.category_id,
         description: values.description.trim() || null,
         is_active: values.is_active,
+        total_units: values.total_units.trim() ? Number(values.total_units) : null,
       })
 
       toast({ title: 'Curso atualizado com sucesso.', variant: 'success' })

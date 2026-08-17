@@ -6,6 +6,7 @@ export type { Course, CourseCategory } from './classes'
 export interface CourseListItem extends Course {
   description: string | null
   is_active: boolean
+  total_units: number | null
 }
 
 export interface CourseDetail extends CourseListItem {
@@ -18,6 +19,7 @@ export interface CreateCourseInput {
   category_id: string
   description?: string | null
   is_active: boolean
+  total_units?: number | null
 }
 
 export type UpdateCourseInput = Partial<CreateCourseInput>

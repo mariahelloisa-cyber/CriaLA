@@ -23,13 +23,6 @@ create trigger set_updated_at
   before update on public.teachers
   for each row execute function public.set_updated_at();
 
--- -----------------------------------------------------------------------------
--- class_teachers (turmas administradas por cada professor)
--- N:N: um professor pode estar em várias turmas, uma turma pode ter mais de
--- um professor. Vínculo simples (não é um registro comercial como
--- enrollments), por isso ON DELETE CASCADE dos dois lados — excluir um
--- professor ou uma turma apenas remove o vínculo, sem bloquear a exclusão.
--- -----------------------------------------------------------------------------
 create table public.class_teachers (
   id uuid primary key default extensions.gen_random_uuid(),
   class_id uuid not null references public.classes (id) on delete cascade,

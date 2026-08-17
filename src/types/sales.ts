@@ -128,6 +128,8 @@ export interface CreateSaleInput {
   payment_plan: string | null
   sale_date: string
   installments: InstallmentInput[]
+  /** Opcional — só o gerente pode atribuir a venda a um vendedor diferente do dono do aluno. */
+  seller_id?: string | null
 }
 
 /** Campos editáveis de uma venda — ver justificativa no relatório final (seção AD): valor/forma de
@@ -164,4 +166,6 @@ export interface CreateEnrollmentWithSaleInput {
   payment_plan: string | null
   sale_date: string
   installments: InstallmentInput[]
+  /** Opcional — só o gerente pode atribuir a venda a um vendedor diferente do dono do aluno. */
+  seller_id?: string | null
 }

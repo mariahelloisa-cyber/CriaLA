@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast'
 import { useShellUser } from '@/hooks/useShellUser'
 import { listActiveCourses } from '@/services/classes.service'
 import { createEnrollmentWithSale, createSaleWithInstallments } from '@/services/sales.service'
+import { listSellers } from '@/services/students.service'
 import { centsToDecimal } from '@/utils/currency'
 import type { Course } from '@/types/enrollments'
 import type { InstallmentInput, SaleFormTarget } from '@/types/sales'
@@ -18,6 +19,7 @@ export function SaleNewPage() {
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
   const [courseOptions, setCourseOptions] = useState<Course[]>([])
+  const [sellerOptions, setSellerOptions] = useState<{ id: string; full_name: string }[]>([])
 
   useEffect(() => {
     let active = true
@@ -35,6 +37,20 @@ export function SaleNewPage() {
     }
   }, [])
 
+  useEffect(() => {
+    let active = true
+    listSellers()
+      .then((sellers) => {
+        if (active) setSellerOptions(sellers)
+      })
+      .catch(() => {
+        // Lista de vendedores é só para o campo opcional "Vendedor" — falha aqui não deve travar o registro da venda.
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
   async function handleSubmit(values: SaleFormValues, installments: InstallmentInput[], target: SaleFormTarget) {
     setSubmitting(true)
     try {
@@ -46,6 +62,7 @@ export function SaleNewPage() {
           payment_plan: values.payment_plan.trim() || null,
           sale_date: values.sale_date,
           installments,
+          seller_id: values.seller_id || null,
         })
         toast({ title: 'Venda registrada com sucesso.', variant: 'success' })
         navigate(ROUTES.saleDetail(id))
@@ -62,6 +79,7 @@ export function SaleNewPage() {
         payment_plan: values.payment_plan.trim() || null,
         sale_date: values.sale_date,
         installments,
+        seller_id: values.seller_id || null,
       })
       toast({ title: 'Matrícula e venda registradas com sucesso.', variant: 'success' })
       navigate(ROUTES.saleDetail(saleId))
@@ -96,6 +114,7 @@ export function SaleNewPage() {
         onSubmit={handleSubmit}
         onCancel={() => navigate(ROUTES.sales)}
         courseOptions={courseOptions}
+        sellerOptions={sellerOptions}
       />
     </AppShell>
   )

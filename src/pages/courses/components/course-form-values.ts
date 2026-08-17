@@ -3,6 +3,7 @@ export interface CourseFormValues {
   category_id: string
   description: string
   is_active: boolean
+  total_units: string
 }
 
 export const EMPTY_COURSE_FORM_VALUES: CourseFormValues = {
@@ -10,4 +11,5 @@ export const EMPTY_COURSE_FORM_VALUES: CourseFormValues = {
   category_id: '',
   description: '',
   is_active: true,
+  total_units: '',
 }

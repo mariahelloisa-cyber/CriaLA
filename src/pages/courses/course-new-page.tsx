@@ -24,6 +24,7 @@ export function CourseNewPage() {
         category_id: values.category_id,
         description: values.description.trim() || null,
         is_active: values.is_active,
+        total_units: values.total_units.trim() ? Number(values.total_units) : null,
       })
 
       toast({ title: 'Curso criado com sucesso.', variant: 'success' })

@@ -163,10 +163,15 @@ export async function getStudentById(id: string): Promise<StudentDetail | null> 
  * Cria aluno + matrícula atomicamente via RPC (public.create_student_with_enrollment).
  * Ver supabase/migrations/20260812090000_enrollments_expected_graduation_date.sql
  * para o motivo de não fazer dois INSERTs separados aqui.
+ *
+ * `sellerId` (opcional) permite ao gerente atribuir o cadastro a outro
+ * vendedor — ver supabase/migrations/20260817140000_manager_seller_override.sql.
+ * Ignorado pela função no banco se quem chama não for gerente.
  */
 export async function createStudentWithEnrollment(
   student: CreateStudentInput,
   enrollment: CreateEnrollmentInput,
+  sellerId?: string,
 ): Promise<{ studentId: string; enrollmentId: string }> {
   const normalizedStudent: CreateStudentInput = {
     ...student,
@@ -176,6 +181,7 @@ export async function createStudentWithEnrollment(
   const { data, error } = await supabase.rpc('create_student_with_enrollment', {
     p_student: normalizedStudent,
     p_enrollment: enrollment,
+    p_seller_id: sellerId || null,
   })
 
   if (error) {

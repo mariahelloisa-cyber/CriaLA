@@ -4,17 +4,20 @@ import { AppShell } from '@/components/layout/app-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { ROUTES } from '@/constants/routes'
 import { toast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/useAuth'
 import { useShellUser } from '@/hooks/useShellUser'
-import { createStudentWithEnrollment, listAvailableClasses } from '@/services/students.service'
+import { createStudentWithEnrollment, listAvailableClasses, listSellers } from '@/services/students.service'
 import type { ClassOption } from '@/types/students'
 import { StudentForm } from './components/student-form'
 import { EMPTY_STUDENT_FORM_VALUES, type StudentFormValues } from './components/student-form-values'
 
 export function StudentNewPage() {
   const shellUser = useShellUser()
+  const { isManager } = useAuth()
   const navigate = useNavigate()
 
   const [classOptions, setClassOptions] = useState<ClassOption[]>([])
+  const [sellerOptions, setSellerOptions] = useState<{ id: string; full_name: string }[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -32,6 +35,21 @@ export function StudentNewPage() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    if (!isManager) return
+    let active = true
+    listSellers()
+      .then((sellers) => {
+        if (active) setSellerOptions(sellers)
+      })
+      .catch(() => {
+        // Lista de vendedores é só para o campo opcional "Vendedor" — falha aqui não deve travar o cadastro.
+      })
+    return () => {
+      active = false
+    }
+  }, [isManager])
 
   async function handleSubmit(values: StudentFormValues) {
     setSubmitting(true)
@@ -59,6 +77,7 @@ export function StudentNewPage() {
           enrollment_date: values.enrollment_date || undefined,
           expected_graduation_date: values.expected_graduation_date || null,
         },
+        values.seller_id || undefined,
       )
 
       toast({ title: 'Aluno cadastrado com sucesso.', variant: 'success' })
@@ -93,6 +112,8 @@ export function StudentNewPage() {
         initialValues={EMPTY_STUDENT_FORM_VALUES}
         classOptions={classOptions}
         canEditAcademic
+        isManager={isManager}
+        sellerOptions={sellerOptions}
         submitting={submitting}
         onSubmit={handleSubmit}
         onCancel={() => navigate(ROUTES.students)}

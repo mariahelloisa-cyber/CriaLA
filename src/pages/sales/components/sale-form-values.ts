@@ -8,6 +8,7 @@ export interface SaleFormValues {
   payment_plan: string
   sale_date: string
   installment_count: number
+  seller_id: string
 }
 
 export const EMPTY_SALE_FORM_VALUES: SaleFormValues = {
@@ -17,4 +18,5 @@ export const EMPTY_SALE_FORM_VALUES: SaleFormValues = {
   payment_plan: '',
   sale_date: todayIso(),
   installment_count: 1,
+  seller_id: '',
 }
