@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { GraduationCap, LineChart, ShieldCheck } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import loginBackground from '@/assets/kids.png'
 import { AuthLoading } from '@/components/auth/auth-loading'
 import { Brand } from '@/components/navigation/brand'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -14,7 +15,7 @@ import { toast } from '@/hooks/use-toast'
 const HIGHLIGHTS = [
   { icon: GraduationCap, text: 'Alunos, turmas e matrículas em um só lugar' },
   { icon: LineChart, text: 'Metas e desempenho comercial em tempo real' },
-  { icon: ShieldCheck, text: 'Acesso por perfil: vendedor ou gerente' },
+  { icon: ShieldCheck, text: 'Acesso por perfil' },
 ]
 
 interface LocationState {
@@ -78,6 +79,13 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
+        <img
+          src={loginBackground}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full scale-110 object-cover blur-[2px]"
+        />
+        <div className="absolute inset-0 bg-primary/30" />
         <DotGridBackground />
 
         {/* Este painel usa fundo sólido pink — o mark precisa de tratamento
