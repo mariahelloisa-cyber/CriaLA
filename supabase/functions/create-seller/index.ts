@@ -14,13 +14,10 @@
 //      de public.is_manager() (Fase 02), só que reimplementada em código
 //      porque uma Edge Function não pode chamar uma função SQL diretamente
 //      sem uma query.
-//   3. Só então chama supabase.auth.admin.createUser() com os metadados que
-//      o trigger public.handle_new_auth_user (Fase 02) já espera
-//      (raw_user_meta_data->>'full_name' e ->>'role'). O profile é criado
-//      pelo TRIGGER, não por um INSERT manual aqui — evita duplicar a regra
-//      e evita race condition entre dois inserts independentes.
-//
-// Nenhuma tabela nova, nenhuma RLS nova, nenhuma policy alterada.
+//   3. Só então chama supabase.auth.admin.createUser(). O profile é criado
+//      pelo TRIGGER public.handle_new_auth_user como seller INATIVO
+//      (auditoria 2026-10-13); esta function o ativa logo em seguida e, se a
+//      ativação falhar, apaga o usuário recém-criado (nunca outro).
 // =============================================================================
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
@@ -118,11 +115,14 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Verifique os dados informados.' }, 400)
   }
 
+  // O role NÃO vai no metadata: o trigger handle_new_auth_user ignora
+  // metadata (controlável pelo usuário via signUp) e sempre cria um seller
+  // INATIVO — ver 20261013120000_security_hardening.sql.
   const { data: created, error: createError } = await adminClient.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName, role: 'seller' },
+    user_metadata: { full_name: fullName },
   })
 
   if (createError) {
@@ -134,6 +134,26 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!created.user) {
+    return jsonResponse({ error: 'Não foi possível criar o vendedor. Tente novamente.' }, 500)
+  }
+
+  // Ativação explícita — único caminho que transforma o profile criado pelo
+  // trigger em um vendedor ativo. Se falhar, desfaz o usuário do Auth para
+  // não deixar uma conta órfã.
+  const { data: activated, error: activateError } = await adminClient
+    .from('profiles')
+    .update({ is_active: true })
+    .eq('id', created.user.id)
+    .eq('role', 'seller')
+    .select('id')
+
+  if (activateError || !activated || activated.length !== 1) {
+    const { error: rollbackError } = await adminClient.auth.admin.deleteUser(created.user.id)
+    if (rollbackError) {
+      // A conta fica INATIVA (o trigger cria assim), então não dá acesso; mas
+      // ocupa o e-mail e precisa de limpeza manual. Só o id vai para o log.
+      console.error('create-seller: falha ao desfazer usuário após erro de ativação', created.user.id)
+    }
     return jsonResponse({ error: 'Não foi possível criar o vendedor. Tente novamente.' }, 500)
   }
 
